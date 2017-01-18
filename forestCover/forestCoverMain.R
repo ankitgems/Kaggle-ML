@@ -1,7 +1,7 @@
 #ForestCover
 rm(list=ls())
-train <- read.csv("~/Kaggle/forestCover/train.csv")
-test <- read.csv("~/Kaggle/forestCover/test.csv")
+train <- read.csv("~/Kaggle/Kaggle-ML/forestCover/train.csv")
+test <- read.csv("~/Kaggle/Kaggle-ML/forestCover/test.csv")
 
 #combining data
 test$Cover_Type<- NA
