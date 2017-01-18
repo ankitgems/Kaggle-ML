@@ -2,7 +2,7 @@
 rm(list=ls())
 train <- read.csv("~/Kaggle/forestCover/train.csv")
 test <- read.csv("~/Kaggle/forestCover/test.csv")
-
+source("C:/Users/exmachina/Documents/R/usefulFunc.r")
 #combining data
 test$Cover_Type<- NA
 comb <- rbind(train,test)
@@ -23,23 +23,24 @@ comb[grep("Wilderness_Area+",colnames(comb))] <- NULL
 train <- comb[1:15120,]
 test <- comb[15121:581012,]
 
-library(randomForest)
-library(rpart)
-library(rattle)
-library(rpart.plot)
-library(RColorBrewer)
-library(party)
-################
-set.seed(415)
-fit <- randomForest(Cover_Type ~ .,data=train[-1], importance=TRUE, ntree=2000, na.action = na.omit)
-varImpPlot(fit)
-predi <- predict(fit,test)
-submit <- data.frame(Id = test$Id, Cover_Type = predi)
-write.csv(submit, file = "~/Kaggle/forestCover/randomforestcover.csv", row.names = FALSE)
-###################
+ran_index <- trainAndCv(train)
+cv <- train[-ran_index,]
+trainer <- train[ran_index,]
+trainer <- trainer[-1]
+cv <- cv[-1]
 
-###################
-#set.seed(415)
-#fit <- cforest(as.factor(Cover_Type) ~ Elevation + Aspect + Slope +  
-#               + Horizontal_Distance_To_Fire_Points + Wilderness_Area1 + Wilderness_Area2 ,
-#              data = train, controls=cforest_unbiased(ntree=2000, mtry=3))
+#feature Normalization
+meanSd <- meanAndSd(trainer, 1,10)
+trainer <- featureNormalize(trainer,1,10, meanSd)
+cv <- featureNormalize(cv,1,10, meanSd)
+
+#svm
+library(e1071)
+model <- svm(Cover_Type ~ ., trainer, cost = 64, epsilon = 0.001)
+predictY <- predict(model,cv)
+Accuracy(cv$Cover_Type, predictY)
+
+tuneResult <- tune(svm, Cover_Type ~., data = trainer, ranges = list(epsilon = seq(0,0.02,0.01), cost = 2^(5:6)))
+tuneModel <- tuneResult$best.model
+tunepredictY <- predict(tuneModel, cv)
+Accuracy(cv$Cover_Type, tunepredictY)
